@@ -1,0 +1,31 @@
+{
+  "name": "hubberdashery",
+  "version": "1.0.0",
+  "description": "Some enhancements for GitHub",
+  "scripts": {
+    "gulp": "gulp",
+    "build-tampermonkey": "gulp build-tampermonkey",
+    "autobuild": "nodemon -w src -e js -x \"npm run build-tampermonkey\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codeo-za/hubberdashery.git"
+  },
+  "author": "",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/codeo-za/hubberdashery/issues"
+  },
+  "homepage": "https://github.com/codeo-za/hubberdashery#readme",
+  "devDependencies": {
+    "browserify": "^16.1.0",
+    "gulp": "^3.9.1",
+    "gulp-browserify": "^0.5.1",
+    "gulp-footer": "^2.0.1",
+    "gulp-header": "^2.0.1",
+    "gulp-help": "^1.6.1",
+    "gulp-rename": "^1.2.2",
+    "nodemon": "^1.15.0",
+    "require-dir": "^1.0.0"
+  }
+}
