@@ -40,7 +40,7 @@ Disadvantages
 
 
 ### dev-testing
-I suggest installing `TamperMonkey` and enabling access to local files via extension preferences. Then use the following template, swapping out the `@require` path for your local copy:
+I suggest installing `TamperMonkey` and enabling access to local files via extension preferences. Then use the following template, swapping out the `@require` path for your local copy. Note that in Google Chrome, you need to load up your extension manager, and check the checkbox titled "Allow access to local file URLS".
 
 ```javascript
 // ==UserScript==
@@ -54,3 +54,5 @@ I suggest installing `TamperMonkey` and enabling access to local files via exten
 // @require      file://C:/code/hubberdashery/dist/tampermonkey.js
 // ==/UserScript==
 ```
+
+ProTip: For development, run `npm run autobuild` which will watch for changes and automatically generate `/dist/tampermonkey.js` (you still need to refresh in your browser).
