@@ -210,5 +210,5 @@ PullRequestPagerHack.prototype = {
     }
 };
 
-PullRequestPagerHack.urlMatch = /.*\/pull\/.*/;
+PullRequestPagerHack.urlMatch = /.*\/pull\/.*\/files.*/;
 module.exports = PullRequestPagerHack;
