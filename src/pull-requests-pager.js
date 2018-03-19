@@ -55,6 +55,20 @@ PullRequestPagerHack.prototype = {
             file._hasAttachedExpandCollapseEvent = true;
         };
     
+        var areAllFilesLoaded = function(files){
+            var allLoaded = files.length == expectedFileCount;
+            if (allLoaded){
+                return true;
+            }
+
+            // if not matching, then we have to investigate a bit deeper
+            if (files.length > 0){
+                var lastFile = files[files.length - 1];
+                return lastFile.nextElementSibling == null;
+            }
+
+            return false;
+        };
     
         var showPage = function(pageIndex){
             selectedPageIndex = pageIndex;
@@ -115,7 +129,7 @@ PullRequestPagerHack.prototype = {
             selectList.innerHTML = optionsHtml.join('\r\n');
             lastFileCount = fileCount;
     
-            if (fileCount == expectedFileCount){
+            if (areAllFilesLoaded(files)){
                 if (timerHandle){
                     clearInterval(timerHandle);
                 }
