@@ -81,20 +81,23 @@ PullRequestPagerHack.prototype = {
                 file.style.display = show ? 'block' : 'none';
     
                 if (show){
-                    collapseFileContent(file);
-                    attachFileInfoExpandCollapseEvent(file);
-                }
-    
-                // check if the contents need to be expanded
-                var includeFragments = Array.from(file.getElementsByTagName('INCLUDE-FRAGMENT'));
-                if (includeFragments.length > 0){
-                    includeFragments.forEach(x => {
-                        var buttons = x.getElementsByTagName('BUTTON');
-                        var loadMoreBtn = buttons.length > 0 ? buttons[0] : null;
-                        if (loadMoreBtn){
-                            window.setTimeout(loadMoreBtn.click.bind(loadMoreBtn), 0);
+                    if (!file._hasContentLoaded){
+                        // check if the contents need to be expanded
+                        file._hasContentLoaded = true;
+                        var includeFragments = Array.from(file.getElementsByTagName('INCLUDE-FRAGMENT'));
+                        if (includeFragments.length > 0){
+                            includeFragments.forEach(x => {
+                                var buttons = x.getElementsByTagName('BUTTON');
+                                var loadMoreBtn = buttons.length > 0 ? buttons[0] : null;
+                                if (loadMoreBtn){
+                                    window.setTimeout(loadMoreBtn.click.bind(loadMoreBtn), 0);
+                                }
+                            });
                         }
-                    });
+                    }
+
+                    //collapseFileContent(file);
+                    attachFileInfoExpandCollapseEvent(file);
                 }
             }
         };
