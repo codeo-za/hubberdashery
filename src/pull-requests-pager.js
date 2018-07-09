@@ -4,7 +4,6 @@ function PullRequestPagerHack() {
 
 PullRequestPagerHack.prototype = {
     destroy: function(){
-        debugger;
         if (this.timerHandle){
             clearInterval(this.timerHandle);
         }
