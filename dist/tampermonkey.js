@@ -11,13 +11,17 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var 
     PullRequestsHack = require("./pull-requests-hack"),
-    PullRequestPagerHack = require('./pull-requests-pager');
+    PullRequestPagerHack = require('./pull-requests-pager'),
+    PullRequestCommentHack = require('./pull-request-show-all-comments');
 
-var hacks = [ PullRequestsHack, PullRequestPagerHack];
+var hacks = [
+    PullRequestsHack, 
+    PullRequestPagerHack,
+    PullRequestCommentHack];
 var available = hacks.filter(h => window.location.pathname.match(h.urlMatch));
 available.forEach(a => new (a));
 
-},{"./pull-requests-hack":4,"./pull-requests-pager":5}],2:[function(require,module,exports){
+},{"./pull-request-show-all-comments":4,"./pull-requests-hack":5,"./pull-requests-pager":6}],2:[function(require,module,exports){
 function FilenameFilter(filterText) {
     this._filterText = filterText;
 }
@@ -155,6 +159,99 @@ FilenameFilterLite.prototype = {
 
 module.exports = FilenameFilterLite;
 },{}],4:[function(require,module,exports){
+function ExpandCommentsHack() {
+    this.init();
+};
+
+ExpandCommentsHack.prototype = {
+    init: function(){
+
+        var headerActionsEl = document.getElementsByClassName('gh-header-actions');
+        if (headerActionsEl.length == 0) {
+            return;
+        }
+
+        var btnExpandComments = document.createElement("button");
+        btnExpandComments.classList.add("btn");
+        btnExpandComments.classList.add("btn-sm");
+        btnExpandComments.classList.add("js-detials-target");
+        btnExpandComments.innerHTML = "Expand Comments";
+        
+        var btnContainer = headerActionsEl[0];
+        btnContainer.insertBefore(
+            btnExpandComments, 
+            btnContainer.firstChild);
+
+        var loadMore = function () {
+            var loadMoreButtons = document.getElementsByClassName('ajax-pagination-btn');
+
+            Array
+                .from(loadMoreButtons)
+                .forEach(x => window.setTimeout(x.click.bind(x), 0));
+
+
+            return loadMoreButtons.length;
+        };
+
+        var expandAllComments = function () {
+            var outdatedButtons =
+                Array
+                    .from(document.getElementsByTagName('BUTTON'))
+                    .filter(x =>
+                        x.className.indexOf('show-outdated-button') > -1
+                        && x.offsetParent != null // visible
+                    );
+            outdatedButtons.forEach(x => window.setTimeout(x.click.bind(x), 0));
+        };
+
+        var prefixTitle = function (val) {
+            var title = getTitle();
+            if (title == null) {
+                return;
+            }
+
+            var originalHTML = title.innerHTML;
+            if (title.originalHTML == undefined) {
+                title.originalHTML = title.innerHTML;
+            }
+            else {
+                originalHTML = title.originalHTML;
+            }
+            title.innerHTML = val + originalHTML;
+        };
+
+        var updateButtonStatus = function(val){
+            btnExpandComments.innerHTML = val;
+        };
+
+        var getTitle = function () {
+            var titleEls = document.getElementsByClassName('js-issue-title');
+            if (titleEls.length > 0) {
+                return titleEls[0]
+            }
+            return null;
+        };
+
+        var continouslyCheckInAndLoad = function () {
+            updateButtonStatus('⏳ Expanding');
+            var loadingCount = loadMore();
+            var loadedStuff = loadingCount > 0;
+            if (loadedStuff) {
+                updateButtonStatus('⏳ Expanding #' + loadingCount);
+                window.setTimeout(continouslyCheckInAndLoad, 1000);
+            } else {
+                expandAllComments();
+                updateButtonStatus('✅ Expanded');
+            }
+        };
+
+        btnExpandComments.onclick = continouslyCheckInAndLoad;
+    }
+};
+
+ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+$/;
+module.exports = ExpandCommentsHack;
+},{}],5:[function(require,module,exports){
 var 
     FilenameFilter = require("./filename-filter-old")
     FilenameFilterLite = require("./filename-filter");
@@ -417,7 +514,7 @@ PullRequestsHack.prototype = {
 };
 
 module.exports = PullRequestsHack;
-},{"./filename-filter":3,"./filename-filter-old":2}],5:[function(require,module,exports){
+},{"./filename-filter":3,"./filename-filter-old":2}],6:[function(require,module,exports){
 function PullRequestPagerHack() {
     this.init();
 };
@@ -517,7 +614,7 @@ PullRequestPagerHack.prototype = {
                     }
 
                     //collapseFileContent(file);
-                    attachFileInfoExpandCollapseEvent(file);
+                    //attachFileInfoExpandCollapseEvent(file);
                 }
             }
         };

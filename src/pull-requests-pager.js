@@ -97,7 +97,7 @@ PullRequestPagerHack.prototype = {
                     }
 
                     //collapseFileContent(file);
-                    attachFileInfoExpandCollapseEvent(file);
+                    //attachFileInfoExpandCollapseEvent(file);
                 }
             }
         };
