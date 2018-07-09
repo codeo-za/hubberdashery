@@ -3,10 +3,14 @@ function ExpandCommentsHack() {
 };
 
 ExpandCommentsHack.prototype = {
+    destroy: function(){
+    },
     init: function(){
 
         var headerActionsEl = document.getElementsByClassName('gh-header-actions');
         if (headerActionsEl.length == 0) {
+            // element not available, poll
+            window.setTimeout(this.init.bind(this), 1000);
             return;
         }
 

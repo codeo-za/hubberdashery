@@ -3,6 +3,15 @@ function PullRequestPagerHack() {
 };
 
 PullRequestPagerHack.prototype = {
+    destroy: function(){
+        debugger;
+        if (this.timerHandle){
+            clearInterval(this.timerHandle);
+        }
+        if (this.container){
+            this.container.parentNode.removeChild(this.container);
+        }
+    },
     init : function(){
         var files = document.getElementsByClassName('file');
         var pageSize = 10;
@@ -210,6 +219,9 @@ PullRequestPagerHack.prototype = {
     
         createSelectPager();
         timerHandle = window.setInterval(updatePageOptions, 3000);
+
+        this.timerHandle = timerHandle;
+        this.container = pageContainer;
     }
 };
 

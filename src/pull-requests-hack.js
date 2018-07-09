@@ -8,6 +8,8 @@ function PullRequestsHack() {
 }
 PullRequestsHack.urlMatch = /.*\/pull\/.*/;
 PullRequestsHack.prototype = {
+    destroy: function(){
+    },
     init: function () {
         var menuButton = this.createExtendedMenuButton();
         if (!menuButton) {

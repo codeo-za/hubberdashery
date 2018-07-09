@@ -18,9 +18,26 @@ var hacks = [
     PullRequestsHack, 
     PullRequestPagerHack,
     PullRequestCommentHack];
-var available = hacks.filter(h => window.location.pathname.match(h.urlMatch));
-available.forEach(a => new (a));
 
+var runningHacks = [];
+
+var executeHacks = function(){
+    var path = window.location.pathname;
+    console.info('hubbery dashery - executing matchers for ' + path);
+    runningHacks.forEach(x => x.destroy());
+    var available = hacks.filter(h => path.match(h.urlMatch));
+    runningHacks = available.map(a => new (a));
+}
+
+var currentPath = "";
+window.setInterval(function(){
+        if (currentPath == window.location.pathname){
+            return;
+        }
+        console.info('hubbery dashery - detected url change');
+        window.setTimeout(executeHacks, 0);
+        currentPath = window.location.pathname;
+    }, 1000);
 },{"./pull-request-show-all-comments":4,"./pull-requests-hack":5,"./pull-requests-pager":6}],2:[function(require,module,exports){
 function FilenameFilter(filterText) {
     this._filterText = filterText;
@@ -164,10 +181,14 @@ function ExpandCommentsHack() {
 };
 
 ExpandCommentsHack.prototype = {
+    destroy: function(){
+    },
     init: function(){
 
         var headerActionsEl = document.getElementsByClassName('gh-header-actions');
         if (headerActionsEl.length == 0) {
+            // element not available, poll
+            window.setTimeout(this.init.bind(this), 1000);
             return;
         }
 
@@ -202,22 +223,6 @@ ExpandCommentsHack.prototype = {
                         && x.offsetParent != null // visible
                     );
             outdatedButtons.forEach(x => window.setTimeout(x.click.bind(x), 0));
-        };
-
-        var prefixTitle = function (val) {
-            var title = getTitle();
-            if (title == null) {
-                return;
-            }
-
-            var originalHTML = title.innerHTML;
-            if (title.originalHTML == undefined) {
-                title.originalHTML = title.innerHTML;
-            }
-            else {
-                originalHTML = title.originalHTML;
-            }
-            title.innerHTML = val + originalHTML;
         };
 
         var updateButtonStatus = function(val){
@@ -262,6 +267,8 @@ function PullRequestsHack() {
 }
 PullRequestsHack.urlMatch = /.*\/pull\/.*/;
 PullRequestsHack.prototype = {
+    destroy: function(){
+    },
     init: function () {
         var menuButton = this.createExtendedMenuButton();
         if (!menuButton) {
@@ -520,6 +527,15 @@ function PullRequestPagerHack() {
 };
 
 PullRequestPagerHack.prototype = {
+    destroy: function(){
+        debugger;
+        if (this.timerHandle){
+            clearInterval(this.timerHandle);
+        }
+        if (this.container){
+            this.container.parentNode.removeChild(this.container);
+        }
+    },
     init : function(){
         var files = document.getElementsByClassName('file');
         var pageSize = 10;
@@ -727,6 +743,9 @@ PullRequestPagerHack.prototype = {
     
         createSelectPager();
         timerHandle = window.setInterval(updatePageOptions, 3000);
+
+        this.timerHandle = timerHandle;
+        this.container = pageContainer;
     }
 };
 
