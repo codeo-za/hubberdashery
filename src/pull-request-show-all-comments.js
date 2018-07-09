@@ -51,14 +51,6 @@ ExpandCommentsHack.prototype = {
             btnExpandComments.innerHTML = val;
         };
 
-        var getTitle = function () {
-            var titleEls = document.getElementsByClassName('js-issue-title');
-            if (titleEls.length > 0) {
-                return titleEls[0]
-            }
-            return null;
-        };
-
         var continouslyCheckInAndLoad = function () {
             updateButtonStatus('⏳ Expanding');
             var loadingCount = loadMore();
@@ -68,8 +60,31 @@ ExpandCommentsHack.prototype = {
                 window.setTimeout(continouslyCheckInAndLoad, 1000);
             } else {
                 expandAllComments();
-                updateButtonStatus('✅ Expanded');
+                addCommentController();
             }
+        };
+
+        var addCommentController = function(){
+            updateButtonStatus('✅ Remove Completed Comments');
+            btnExpandComments.onclick = killAllCommentsRespondedTo; 
+        };
+
+        var killAllCommentsRespondedTo = function(){
+            var remaining = 0;
+            var mainCommentContainers = Array.from(document.getElementsByClassName('js-comment-container'));
+            mainCommentContainers.forEach(x => {
+                remaining++;
+                var lastComment = Array.from(x.getElementsByClassName('review-comment')).slice(-1).pop();
+                if (lastComment == null){
+                    return;
+                }
+                var isThumbsUp = lastComment.getElementsByClassName('emoji mr-1').length == 1;
+                if (isThumbsUp){
+                    x.parentNode.removeChild(x);
+                    remaining--;
+                }
+            });
+            updateButtonStatus('✅ ' + remaining + ' Comments Remaining');
         };
 
         btnExpandComments.onclick = continouslyCheckInAndLoad;
