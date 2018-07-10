@@ -56,7 +56,7 @@ ExpandCommentsHack.prototype = {
             var loadingCount = loadMore();
             var loadedStuff = loadingCount > 0;
             if (loadedStuff) {
-                updateButtonStatus('⏳ Expanding #' + loadingCount);
+                updateButtonStatus('⏳ Expanding (' + loadingCount + ' left)');
                 window.setTimeout(continouslyCheckInAndLoad, 1000);
             } else {
                 expandAllComments();
@@ -71,15 +71,19 @@ ExpandCommentsHack.prototype = {
 
         var killAllCommentsRespondedTo = function(){
             var remaining = 0;
-            var mainCommentContainers = Array.from(document.getElementsByClassName('js-comment-container'));
+            var mainCommentContainers = Array.from(document.getElementsByClassName('file js-comment-container'));
             mainCommentContainers.forEach(x => {
                 remaining++;
                 var lastComment = Array.from(x.getElementsByClassName('review-comment')).slice(-1).pop();
                 if (lastComment == null){
                     return;
                 }
-                var isThumbsUp = lastComment.getElementsByClassName('emoji mr-1').length == 1;
-                if (isThumbsUp){
+                var hasThumbsUp = 
+                    Array.from(lastComment.getElementsByClassName('emoji mr-1'))
+                    .filter(x => x.innerHTML == '👍')
+                    .length > 0;
+
+                if (hasThumbsUp){
                     x.parentNode.removeChild(x);
                     remaining--;
                 }
