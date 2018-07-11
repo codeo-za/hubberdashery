@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hubberdashery
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  Some hackdashery for your githubz.
 // @author       Space Monkey Extraordinaire!
 // @match        https://github.com/*
@@ -273,7 +273,7 @@ ExpandCommentsHack.prototype = {
     }
 };
 
-ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+$/;
+ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
 module.exports = ExpandCommentsHack;
 },{}],5:[function(require,module,exports){
 var 

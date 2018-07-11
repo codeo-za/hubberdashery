@@ -95,5 +95,5 @@ ExpandCommentsHack.prototype = {
     }
 };
 
-ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+$/;
+ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
 module.exports = ExpandCommentsHack;
