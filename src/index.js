@@ -1,12 +1,14 @@
 var 
     PullRequestsHack = require("./pull-requests-hack"),
     PullRequestPagerHack = require('./pull-requests-pager'),
-    PullRequestCommentHack = require('./pull-request-show-all-comments');
+    PullRequestCommentHack = require('./pull-request-show-all-comments'),
+    TrelloSidebarHack = require('./trello-sidebar-hack');
 
 var hacks = [
     PullRequestsHack, 
     PullRequestPagerHack,
-    PullRequestCommentHack];
+    PullRequestCommentHack,
+    TrelloSidebarHack];
 
 var runningHacks = [];
 
