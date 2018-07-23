@@ -12,12 +12,14 @@
 var 
     PullRequestsHack = require("./pull-requests-hack"),
     PullRequestPagerHack = require('./pull-requests-pager'),
-    PullRequestCommentHack = require('./pull-request-show-all-comments');
+    PullRequestCommentHack = require('./pull-request-show-all-comments'),
+    TrelloSidebarHack = require('./trello-sidebar-hack');
 
 var hacks = [
     PullRequestsHack, 
     PullRequestPagerHack,
-    PullRequestCommentHack];
+    PullRequestCommentHack,
+    TrelloSidebarHack];
 
 var runningHacks = [];
 
@@ -38,7 +40,7 @@ window.setInterval(function(){
         window.setTimeout(executeHacks, 0);
         currentPath = window.location.pathname;
     }, 1000);
-},{"./pull-request-show-all-comments":4,"./pull-requests-hack":5,"./pull-requests-pager":6}],2:[function(require,module,exports){
+},{"./pull-request-show-all-comments":5,"./pull-requests-hack":6,"./pull-requests-pager":7,"./trello-sidebar-hack":8}],2:[function(require,module,exports){
 function FilenameFilter(filterText) {
     this._filterText = filterText;
 }
@@ -176,6 +178,39 @@ FilenameFilterLite.prototype = {
 
 module.exports = FilenameFilterLite;
 },{}],4:[function(require,module,exports){
+function addItemsToSidebar(headingText, contentArray) {
+    if(!Array.isArray(contentArray)) {
+        contentArray = [contentArray];
+    }
+
+	// Create the heading
+	var trelloSidebarHeading = document.createElement("div");
+	trelloSidebarHeading.classList.add("discussion-sidebar-heading");
+	trelloSidebarHeading.classList.add("text-bold");
+    trelloSidebarHeading.innerHTML = headingText;
+	trelloSidebarItem.appendChild(trelloSidebarHeading);
+    
+    contentArray.forEach(element => {
+        // Create the content
+        var trelloSidebarContent = document.createElement("div");
+        trelloSidebarContent.innerHTML = content;
+
+        // Create the sidebar item
+        var trelloSidebarItem = document.createElement("div");
+        trelloSidebarItem.classList.add("discussion-sidebar-item");
+        trelloSidebarItem.classList.add("sidebar-trello");
+
+        // Append the side bar item heading and content.
+        trelloSidebarItem.appendChild(element);
+    });
+    
+	// Append the sidebar item to the side panel
+	var discussionSidebar = document.getElementById('partial-discussion-sidebar');
+	discussionSidebar.appendChild(trelloSidebarItem);
+}
+
+module.exports = addItemsToSidebar;
+},{}],5:[function(require,module,exports){
 function ExpandCommentsHack() {
     this.init();
 };
@@ -275,7 +310,7 @@ ExpandCommentsHack.prototype = {
 
 ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
 module.exports = ExpandCommentsHack;
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var 
     FilenameFilter = require("./filename-filter-old")
     FilenameFilterLite = require("./filename-filter");
@@ -540,7 +575,7 @@ PullRequestsHack.prototype = {
 };
 
 module.exports = PullRequestsHack;
-},{"./filename-filter":3,"./filename-filter-old":2}],6:[function(require,module,exports){
+},{"./filename-filter":3,"./filename-filter-old":2}],7:[function(require,module,exports){
 function PullRequestPagerHack() {
     this.init();
 };
@@ -769,5 +804,31 @@ PullRequestPagerHack.prototype = {
 
 PullRequestPagerHack.urlMatch = /.*\/pull\/.*\/files.*/;
 module.exports = PullRequestPagerHack;
-},{}]},{},[1])
+},{}],8:[function(require,module,exports){
+var addToSidebarFunc = require('./modules/add-to-sidebar');
+
+function PullRequestsHack() {
+    this.init();
+}
+
+ExpandCommentsHack.prototype = {
+    destroy: function(){
+    },
+    init: function(){
+        var comments = Array.from(document.getElementsByClassName('d-block comment-body markdown-body  js-comment-body'));
+        var trelloComments = comments.filter(x => x.innerHTML.indexOf("trello") !== -1);
+        
+        if(trelloComments.length !== 1) {
+            console.log(`WARNING: ${comments.length} comments detected. ${trelloComments.length} trello items detected.`);
+            return;
+        }
+
+        var trelloItem = trelloComments[0];
+        addToSidebarFunc('Trello', trelloItem.innerHTML);
+    }
+};
+
+PullRequestsHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
+module.exports = PullRequestsHack;
+},{"./modules/add-to-sidebar":4}]},{},[1])
 })();

@@ -4,7 +4,7 @@
   "description": "Some enhancements for GitHub",
   "scripts": {
     "gulp": "gulp",
-    "build-tampermonkey": "gulp build-tampermonkey",
+    "build": "gulp build-tampermonkey",
     "autobuild": "nodemon -w src -e js -x \"npm run build-tampermonkey\"",
     "pretest-once": "node -e \"console.log('Start testing: ', new Date())\"",
     "test-once": "mocha -R mocha-yar \"specs/**/*.spec.js\" || exit 1",
@@ -21,20 +21,20 @@
   },
   "homepage": "https://github.com/codeo-za/hubberdashery#readme",
   "devDependencies": {
-    "browserify": "^16.1.0",
+    "browserify": "^16.2.2",
     "chai": "^4.1.2",
     "faker": "^4.1.0",
     "gulp": "^3.9.1",
     "gulp-browserify": "^0.5.1",
     "gulp-footer": "^2.0.1",
-    "gulp-header": "^2.0.1",
+    "gulp-header": "^2.0.5",
     "gulp-help": "^1.6.1",
-    "gulp-rename": "^1.2.2",
-    "mocha": "^5.0.1",
+    "gulp-rename": "^1.3.0",
+    "mocha": "^5.2.0",
     "mocha-yar": "^1.0.12",
-    "nodemon": "^1.15.0",
+    "nodemon": "^1.18.3",
     "proxyquire": "^1.8.0",
     "require-dir": "^1.0.0",
-    "sinon": "^4.3.0"
+    "sinon": "^4.5.0"
   }
 }
