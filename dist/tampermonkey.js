@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hubberdashery
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.1
 // @description  Some hackdashery for your githubz.
 // @author       Space Monkey Extraordinaire!
 // @match        https://github.com/*
@@ -10,37 +10,13 @@
 (function() {
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var 
-    PullRequestsHack = require("./pull-requests-hack"),
-    PullRequestPagerHack = require('./pull-requests-pager'),
-    PullRequestCommentHack = require('./pull-request-show-all-comments'),
-    TrelloSidebarHack = require('./trello-sidebar-hack');
+    PullRequestsHack = require("./pull-requests-hack");
 
-var hacks = [
-    PullRequestsHack, 
-    PullRequestPagerHack,
-    PullRequestCommentHack,
-    TrelloSidebarHack];
+var hacks = [ PullRequestsHack ];
+var available = hacks.filter(h => window.location.pathname.match(h.urlMatch));
+available.forEach(a => new (a));
 
-var runningHacks = [];
-
-var executeHacks = function(){
-    var path = window.location.pathname;
-    console.info('Hubberdashery - executing matchers for ' + path);
-    runningHacks.forEach(x => x.destroy());
-    var available = hacks.filter(h => path.match(h.urlMatch));
-    runningHacks = available.map(a => new (a));
-}
-
-var currentPath = "";
-window.setInterval(function(){
-        if (currentPath == window.location.pathname){
-            return;
-        }
-        console.info('Hubberdashery - detected url change');
-        window.setTimeout(executeHacks, 0);
-        currentPath = window.location.pathname;
-    }, 1000);
-},{"./pull-request-show-all-comments":5,"./pull-requests-hack":6,"./pull-requests-pager":7,"./trello-sidebar-hack":8}],2:[function(require,module,exports){
+},{"./pull-requests-hack":4}],2:[function(require,module,exports){
 function FilenameFilter(filterText) {
     this._filterText = filterText;
 }
@@ -113,205 +89,71 @@ FilenameFilter.prototype = {
 
 module.exports = FilenameFilter;
 },{}],3:[function(require,module,exports){
+const simpleFilterChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890.*";
 function FilenameFilterLite(filterText) {
     this._filterText = filterText || "";
 }
 FilenameFilterLite.prototype = {
     filter: function (fileElements) {
         var filters = this._filterText.trim().split(",")
-            .map(part => this.makeFilterFor(part))
+            .map(part => this._makeFilterFor(part))
             .filter(f => f);
         return fileElements.filter(file => {
             var positiveFilters = filters.filter(f => f.match);
             var negativeFilters = filters.filter(f => !f.match);
             const includedByPositiveFilters = positiveFilters.length === 0 ||
                 positiveFilters.reduce((acc2, filter) => {
-                    return acc2 || file.match(filter.re)
+                    return acc2 || file.fileName.match(filter.re)
                 }, false);
-            const negativeFilterMatch = negativeFilters.length === 0 
-            ? false
-            : negativeFilters.reduce((acc2, filter) => {
-                return acc2 || !!file.match(filter.re)
-            }, false);
+            const negativeFilterMatch = negativeFilters.length === 0
+                ? false
+                : negativeFilters.reduce((acc2, filter) => {
+                    return acc2 || !!file.fileName.match(filter.re)
+                }, false);
             return includedByPositiveFilters && !negativeFilterMatch;
         });
     },
-    matches: function (str, filter) {
-        var isMatch = str.match(filter.re);
-        return filter.match ? isMatch : !isMatch;
-    },
-    makeFilterFor: function (text) {
+    _makeFilterFor: function (text) {
         try {
             var trimmed = text.trim();
             if (!trimmed) {
                 return null;
             }
-            // if (trimmed[0] === "/" && trimmed.split("/").length > 2) {
-            //     // raw regex
-            //     return { re: new RegExp(trimmed), match: true };
-            // }
+
             var match = trimmed[0] !== "!";
             if (!match) {
                 trimmed = trimmed.substring(1);
             }
 
-            var re = this.looksLikeFileExtensionFilter(trimmed)
-                ? new RegExp("." + trimmed + "$")
+            var re = this._looksLikeSimpleFilter(trimmed)
+                ? new RegExp(`\.${trimmed.replace(".", "\\.").replace("*", ".*")}$`)
                 : new RegExp(trimmed);
             return {
                 re: re,
                 match: match
             };
-        } catch (e) { 
+        } catch (e) {
             console.log(`ignoring filter '${text}'`, e.toString());
-            /* ignore: filter is probably incomplete */ 
+            /* ignore: filter is probably incomplete */
         }
     },
 
-    looksLikeFileExtensionFilter: function (filter) {
-        var parts = filter.split(".");
-        return filter === "*" || parts.length === 2 &&
-            parts[0] === "*";
+    _escapeRegexCharacters: function(str) {
+    },
+
+    _looksLikeSimpleFilter: function (filter) {
+        // filter is simple if it only contains alphanumerics, periods & wildcard (*)
+        const result = Array.from(filter).reduce(
+            (a, c) => a && simpleFilterChars.indexOf(c) > -1,
+            true);
+        return result;
     }
 };
 
 
 module.exports = FilenameFilterLite;
 },{}],4:[function(require,module,exports){
-function addItemsToSidebar(headingText, contentArray) {
-    if(!Array.isArray(contentArray)) {
-        contentArray = [contentArray];
-    }
-
-	// Create the heading
-	var trelloSidebarHeading = document.createElement("div");
-	trelloSidebarHeading.classList.add("discussion-sidebar-heading");
-	trelloSidebarHeading.classList.add("text-bold");
-    trelloSidebarHeading.innerHTML = headingText;
-	trelloSidebarItem.appendChild(trelloSidebarHeading);
-    
-    contentArray.forEach(element => {
-        // Create the content
-        var trelloSidebarContent = document.createElement("div");
-        trelloSidebarContent.innerHTML = content;
-
-        // Create the sidebar item
-        var trelloSidebarItem = document.createElement("div");
-        trelloSidebarItem.classList.add("discussion-sidebar-item");
-        trelloSidebarItem.classList.add("sidebar-trello");
-
-        // Append the side bar item heading and content.
-        trelloSidebarItem.appendChild(element);
-    });
-    
-	// Append the sidebar item to the side panel
-	var discussionSidebar = document.getElementById('partial-discussion-sidebar');
-	discussionSidebar.appendChild(trelloSidebarItem);
-}
-
-module.exports = addItemsToSidebar;
-},{}],5:[function(require,module,exports){
-function ExpandCommentsHack() {
-    this.init();
-};
-
-ExpandCommentsHack.prototype = {
-    destroy: function(){
-    },
-    init: function(){
-
-        var headerActionsEl = document.getElementsByClassName('gh-header-actions');
-        if (headerActionsEl.length == 0) {
-            // element not available, poll
-            window.setTimeout(this.init.bind(this), 1000);
-            return;
-        }
-
-        var btnExpandComments = document.createElement("button");
-        btnExpandComments.classList.add("btn");
-        btnExpandComments.classList.add("btn-sm");
-        btnExpandComments.classList.add("js-detials-target");
-        btnExpandComments.innerHTML = "Expand Comments";
-        
-        var btnContainer = headerActionsEl[0];
-        btnContainer.insertBefore(
-            btnExpandComments, 
-            btnContainer.firstChild);
-
-        var loadMore = function () {
-            var loadMoreButtons = document.getElementsByClassName('ajax-pagination-btn');
-
-            Array
-                .from(loadMoreButtons)
-                .forEach(x => window.setTimeout(x.click.bind(x), 0));
-
-
-            return loadMoreButtons.length;
-        };
-
-        var expandAllComments = function () {
-            var outdatedButtons =
-                Array
-                    .from(document.getElementsByTagName('BUTTON'))
-                    .filter(x =>
-                        x.className.indexOf('show-outdated-button') > -1
-                        && x.offsetParent != null // visible
-                    );
-            outdatedButtons.forEach(x => window.setTimeout(x.click.bind(x), 0));
-        };
-
-        var updateButtonStatus = function(val){
-            btnExpandComments.innerHTML = val;
-        };
-
-        var continouslyCheckInAndLoad = function () {
-            updateButtonStatus('⏳ Expanding');
-            var loadingCount = loadMore();
-            var loadedStuff = loadingCount > 0;
-            if (loadedStuff) {
-                updateButtonStatus('⏳ Expanding (' + loadingCount + ' left)');
-                window.setTimeout(continouslyCheckInAndLoad, 1000);
-            } else {
-                expandAllComments();
-                addCommentController();
-            }
-        };
-
-        var addCommentController = function(){
-            updateButtonStatus('✅ Remove Completed Comments');
-            btnExpandComments.onclick = killAllCommentsRespondedTo; 
-        };
-
-        var killAllCommentsRespondedTo = function(){
-            var remaining = 0;
-            var mainCommentContainers = Array.from(document.getElementsByClassName('file js-comment-container'));
-            mainCommentContainers.forEach(x => {
-                remaining++;
-                var lastComment = Array.from(x.getElementsByClassName('review-comment')).slice(-1).pop();
-                if (lastComment == null){
-                    return;
-                }
-                var hasThumbsUp = 
-                    Array.from(lastComment.getElementsByClassName('emoji mr-1'))
-                    .filter(x => x.innerHTML == '👍')
-                    .length > 0;
-
-                if (hasThumbsUp){
-                    x.parentNode.removeChild(x);
-                    remaining--;
-                }
-            });
-            updateButtonStatus('✅ ' + remaining + ' Comments Remaining');
-        };
-
-        btnExpandComments.onclick = continouslyCheckInAndLoad;
-    }
-};
-
-ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
-module.exports = ExpandCommentsHack;
-},{}],6:[function(require,module,exports){
-var 
+var
     FilenameFilter = require("./filename-filter-old")
     FilenameFilterLite = require("./filename-filter");
 
@@ -321,8 +163,6 @@ function PullRequestsHack() {
 }
 PullRequestsHack.urlMatch = /.*\/pull\/.*/;
 PullRequestsHack.prototype = {
-    destroy: function(){
-    },
     init: function () {
         var menuButton = this.createExtendedMenuButton();
         if (!menuButton) {
@@ -414,15 +254,26 @@ PullRequestsHack.prototype = {
         return menuButton;
     },
 
-    createExtendedMenuLinkedTo: function (button) {
-        var buttonRect = button.getClientRects()[0];
-        if (!buttonRect) {
-            this.log("Unable to get client rect for menu button");
+    _getClientRectOf: function(el) {
+        var result = el.getClientRects()[0];
+        if (result) {
+            return result;
+            this.log("Unable to get client rect for", el);
         }
+        return {
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0
+        }
+    },
+    createExtendedMenuLinkedTo: function (button) {
+        var buttonRect = this._getClientRectOf(button);
         var menuDiv = this.mkEl("div", {
             attributes: {
+                id: "hubberdashery-menu",
                 style: {
-                    position: "absolute",
+                    position: "relative",
                     top: this.px(buttonRect.top + buttonRect.height),
                     right: this.px(20),
                     display: "none",
@@ -442,6 +293,13 @@ PullRequestsHack.prototype = {
             button.innerText = button.innerText === "▼" ? "▲" : "▼";
         });
         document.body.appendChild(menuDiv);
+        window.addEventListener("scroll", () => {
+            var buttonRect = button.getClientRects()[0];
+            console.log("buttonRect", buttonRect);
+            // var newTop = buttonRect.top + buttonRect.height;
+            // this.log("moving to: ", newTop);
+            // menuDiv.style.top = this.px(newTop);
+        });
         return menuDiv;
     },
 
@@ -575,260 +433,5 @@ PullRequestsHack.prototype = {
 };
 
 module.exports = PullRequestsHack;
-},{"./filename-filter":3,"./filename-filter-old":2}],7:[function(require,module,exports){
-function PullRequestPagerHack() {
-    this.init();
-};
-
-PullRequestPagerHack.prototype = {
-    destroy: function(){
-        if (this.timerHandle){
-            clearInterval(this.timerHandle);
-        }
-        if (this.container){
-            this.container.parentNode.removeChild(this.container);
-        }
-    },
-    init : function(){
-        var files = document.getElementsByClassName('file');
-        var pageSize = 10;
-        var pageCount = files.length / pageSize;
-        var selectedPageIndex = 0;
-        var pageContainer = null;
-        var expectedFileCount = parseInt(document.getElementById('files_tab_counter').innerText);
-        var timerHandle = null;
-    
-        console.info(`expanding ${expectedFileCount} files`);
-    
-        var width = function(){
-           return window.innerWidth 
-               || document.documentElement.clientWidth 
-               || document.body.clientWidth 
-               || 0;
-        };
-    
-        var height = function(){
-               return window.innerHeight 
-               || document.documentElement.clientHeight 
-               || document.body.clientHeight 
-               || 0;
-        }
-    
-        var isFileContentExpanded = function(file){
-            return file.className.match(/\sopen\s/g) == null;
-        };
-    
-        var toggleFileContents = function(file){
-            var expanderButton = file.getElementsByClassName('js-details-target')[0];
-            window.setTimeout(expanderButton.click.bind(expanderButton),0);
-        };
-    
-        var collapseFileContent = function(file){
-            if (!isFileContentExpanded(file)){
-                return;
-            }
-            toggleFileContents(file);
-        };
-    
-        var attachFileInfoExpandCollapseEvent = function(file){
-            if (file._hasAttachedExpandCollapseEvent){
-                return;
-            }
-    
-            var header = file.getElementsByClassName('file-info')[0];
-            header.addEventListener('click', (e) => toggleFileContents(file, e));
-            header.style.cursor = 'pointer';
-            file._hasAttachedExpandCollapseEvent = true;
-        };
-    
-        var areAllFilesLoaded = function(files){
-            var allLoaded = files.length == expectedFileCount;
-            if (allLoaded){
-                return true;
-            }
-
-            // if not matching, then we have to investigate a bit deeper
-            if (files.length > 0){
-                var lastFile = files[files.length - 1];
-                return lastFile.nextElementSibling == null;
-            }
-
-            return false;
-        };
-    
-        var showPage = function(pageIndex){
-            selectedPageIndex = pageIndex;
-    
-            var startFileIndex = pageIndex * pageSize;
-            var endFileIndex = startFileIndex + pageSize;
-            for(var fileIndex = 0; fileIndex < files.length; fileIndex++){
-                var show = fileIndex >= startFileIndex && fileIndex < endFileIndex;
-                var file = files[fileIndex];
-                file.style.display = show ? 'block' : 'none';
-    
-                if (show){
-                    if (!file._hasContentLoaded){
-                        // check if the contents need to be expanded
-                        file._hasContentLoaded = true;
-                        var includeFragments = Array.from(file.getElementsByTagName('INCLUDE-FRAGMENT'));
-                        if (includeFragments.length > 0){
-                            includeFragments.forEach(x => {
-                                var buttons = x.getElementsByTagName('BUTTON');
-                                var loadMoreBtn = buttons.length > 0 ? buttons[0] : null;
-                                if (loadMoreBtn){
-                                    window.setTimeout(loadMoreBtn.click.bind(loadMoreBtn), 0);
-                                }
-                            });
-                        }
-                    }
-
-                    //collapseFileContent(file);
-                    //attachFileInfoExpandCollapseEvent(file);
-                }
-            }
-        };
-    
-        var lastFileCount = 0;
-    
-        var updatePageOptions = function(){
-            files = document.getElementsByClassName('file');
-            var fileCount = files.length;
-    
-            if (lastFileCount === fileCount){
-                // no need to update
-                return; 
-            }
-    
-            pageCount = Math.ceil(fileCount / pageSize);
-    
-            // add options
-            var optionsHtml = [];
-            var pageStart = 0;
-            for(var i = 0; i < pageCount; i++){
-                var pageEnd = pageStart + pageSize;
-                if (pageEnd > fileCount){
-                    pageEnd = fileCount;
-                }
-    
-                optionsHtml.push(`<option data-page='${i}' value='${i}' style='padding:8px; border: 1px solid #d9d9d9; cursor: pointer;'>Files: ${pageStart + 1} - ${pageEnd}</option>`);
-                pageStart += pageSize;
-            }
-    
-            var selectList = document.getElementById('hb-pager-select');
-            selectList.innerHTML = optionsHtml.join('\r\n');
-            lastFileCount = fileCount;
-    
-            if (areAllFilesLoaded(files)){
-                if (timerHandle){
-                    clearInterval(timerHandle);
-                }
-    
-                // enable controls
-                var ids = ['hb-pager-prev', 'hb-pager-select', 'hb-pager-next'];
-                ids.forEach(x => document.getElementById(x).disabled = false);
-                showPage(0);
-            }
-        };
-    
-        var centerContainerOnScreen = function(container){
-            container.style.left = (width()/2 - (container.offsetWidth/2)) + "px";
-            container.style.top = (height() - container.offsetHeight - 20) + "px";
-        };
-    
-        var createSelectPager = function(){
-            // create the static container
-            pageContainer = document.createElement('div')
-            pageContainer.id = 'hb-pager';
-            pageContainer.style.position = "fixed";
-            pageContainer.style.top = "0px";
-            pageContainer.style.left = "-1000px";
-            pageContainer.style.margin = '0px';
-            pageContainer.style.zIndex = '99999';
-            pageContainer.style.backgroundColor = 'transparent';
-            document.getElementsByTagName('body')[0].appendChild(pageContainer);
-    
-            console.info('building up hubber dashery pager links');
-            var pagerHtml = [];
-            pagerHtml.push(`<button id='hb-pager-prev' disabled='disabled' class="btn btn-sm btn-outline">&#8592;</button>`);
-            pagerHtml.push('&nbsp;');
-            pagerHtml.push(`<select id='hb-pager-select' disabled='disabled' class='btn-outline' style='border:2px solid grey; width:150px; height:30px; padding:8px; border: 1px solid #d9d9d9; cursor: pointer; text-align-last:center'>`);
-            pagerHtml.push('</select>');
-            pagerHtml.push('&nbsp;');
-            pagerHtml.push(`<button id='hb-pager-next' disabled='disabled' class="btn btn-sm btn-outline">&#8594;</button>`);
-            
-            pageContainer.innerHTML = pagerHtml.join('');
-            document.getElementById('hb-pager-select').addEventListener('change', onPageChangeHandler);
-    
-            var changeSelectedPage = (delta) =>{
-                var newPage = selectedPageIndex + delta;
-                if (newPage < 0 || newPage >= pageCount){
-                    return;
-                }
-                document.getElementById("hb-pager-select").selectedIndex = newPage;
-                showAndScrollToPage(newPage);
-            }
-            document.getElementById('hb-pager-prev').addEventListener('click', () => changeSelectedPage(-1));
-            document.getElementById('hb-pager-next').addEventListener('click', () => changeSelectedPage(1));
-            updatePageOptions();	
-            centerContainerOnScreen(pageContainer);
-        };
-    
-        var showAndScrollToPage = function(page){
-            if (page < 0 || page >= pageCount){
-                return;
-            }
-            showPage(parseInt(page));
-            window.scrollTo(0, 0);
-        }
-    
-        var onPageChangeHandler = function(e){
-            var page = e.target.value;
-            showAndScrollToPage(page);
-        };
-    
-        window.addEventListener("resize", function(event) {
-            centerContainerOnScreen(pageContainer);
-        });
-    
-        var hiddenFragments = document.getElementsByTagName('INCLUDE-FRAGMENT');
-        hiddenFragments[hiddenFragments.length - 1].scrollIntoView();
-        window.scrollTo(0,0);
-    
-        createSelectPager();
-        timerHandle = window.setInterval(updatePageOptions, 3000);
-
-        this.timerHandle = timerHandle;
-        this.container = pageContainer;
-    }
-};
-
-PullRequestPagerHack.urlMatch = /.*\/pull\/.*\/files.*/;
-module.exports = PullRequestPagerHack;
-},{}],8:[function(require,module,exports){
-var addToSidebarFunc = require('./modules/add-to-sidebar');
-
-function PullRequestsHack() {
-    this.init();
-}
-
-ExpandCommentsHack.prototype = {
-    destroy: function(){
-    },
-    init: function(){
-        var comments = Array.from(document.getElementsByClassName('d-block comment-body markdown-body  js-comment-body'));
-        var trelloComments = comments.filter(x => x.innerHTML.indexOf("trello") !== -1);
-        
-        if(trelloComments.length !== 1) {
-            console.log(`WARNING: ${comments.length} comments detected. ${trelloComments.length} trello items detected.`);
-            return;
-        }
-
-        var trelloItem = trelloComments[0];
-        addToSidebarFunc('Trello', trelloItem.innerHTML);
-    }
-};
-
-PullRequestsHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
-module.exports = PullRequestsHack;
-},{"./modules/add-to-sidebar":4}]},{},[1])
+},{"./filename-filter":3,"./filename-filter-old":2}]},{},[1])
 })();

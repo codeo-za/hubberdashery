@@ -1,4 +1,4 @@
-var 
+var
     FilenameFilter = require("./filename-filter-old")
     FilenameFilterLite = require("./filename-filter");
 
@@ -101,15 +101,26 @@ PullRequestsHack.prototype = {
         return menuButton;
     },
 
-    createExtendedMenuLinkedTo: function (button) {
-        var buttonRect = button.getClientRects()[0];
-        if (!buttonRect) {
-            this.log("Unable to get client rect for menu button");
+    _getClientRectOf: function(el) {
+        var result = el.getClientRects()[0];
+        if (result) {
+            return result;
+            this.log("Unable to get client rect for", el);
         }
+        return {
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0
+        }
+    },
+    createExtendedMenuLinkedTo: function (button) {
+        var buttonRect = this._getClientRectOf(button);
         var menuDiv = this.mkEl("div", {
             attributes: {
+                id: "hubberdashery-menu",
                 style: {
-                    position: "absolute",
+                    position: "relative",
                     top: this.px(buttonRect.top + buttonRect.height),
                     right: this.px(20),
                     display: "none",
@@ -129,6 +140,13 @@ PullRequestsHack.prototype = {
             button.innerText = button.innerText === "▼" ? "▲" : "▼";
         });
         document.body.appendChild(menuDiv);
+        window.addEventListener("scroll", () => {
+            var buttonRect = button.getClientRects()[0];
+            console.log("buttonRect", buttonRect);
+            // var newTop = buttonRect.top + buttonRect.height;
+            // this.log("moving to: ", newTop);
+            // menuDiv.style.top = this.px(newTop);
+        });
         return menuDiv;
     },
 

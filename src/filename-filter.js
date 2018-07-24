@@ -1,62 +1,61 @@
+const simpleFilterChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890.*";
 function FilenameFilterLite(filterText) {
     this._filterText = filterText || "";
 }
 FilenameFilterLite.prototype = {
     filter: function (fileElements) {
         var filters = this._filterText.trim().split(",")
-            .map(part => this.makeFilterFor(part))
+            .map(part => this._makeFilterFor(part))
             .filter(f => f);
         return fileElements.filter(file => {
             var positiveFilters = filters.filter(f => f.match);
             var negativeFilters = filters.filter(f => !f.match);
             const includedByPositiveFilters = positiveFilters.length === 0 ||
                 positiveFilters.reduce((acc2, filter) => {
-                    return acc2 || file.match(filter.re)
+                    return acc2 || file.fileName.match(filter.re)
                 }, false);
-            const negativeFilterMatch = negativeFilters.length === 0 
-            ? false
-            : negativeFilters.reduce((acc2, filter) => {
-                return acc2 || !!file.match(filter.re)
-            }, false);
+            const negativeFilterMatch = negativeFilters.length === 0
+                ? false
+                : negativeFilters.reduce((acc2, filter) => {
+                    return acc2 || !!file.fileName.match(filter.re)
+                }, false);
             return includedByPositiveFilters && !negativeFilterMatch;
         });
     },
-    matches: function (str, filter) {
-        var isMatch = str.match(filter.re);
-        return filter.match ? isMatch : !isMatch;
-    },
-    makeFilterFor: function (text) {
+    _makeFilterFor: function (text) {
         try {
             var trimmed = text.trim();
             if (!trimmed) {
                 return null;
             }
-            // if (trimmed[0] === "/" && trimmed.split("/").length > 2) {
-            //     // raw regex
-            //     return { re: new RegExp(trimmed), match: true };
-            // }
+
             var match = trimmed[0] !== "!";
             if (!match) {
                 trimmed = trimmed.substring(1);
             }
 
-            var re = this.looksLikeFileExtensionFilter(trimmed)
-                ? new RegExp("." + trimmed + "$")
+            var re = this._looksLikeSimpleFilter(trimmed)
+                ? new RegExp(`\.${trimmed.replace(".", "\\.").replace("*", ".*")}$`)
                 : new RegExp(trimmed);
             return {
                 re: re,
                 match: match
             };
-        } catch (e) { 
+        } catch (e) {
             console.log(`ignoring filter '${text}'`, e.toString());
-            /* ignore: filter is probably incomplete */ 
+            /* ignore: filter is probably incomplete */
         }
     },
 
-    looksLikeFileExtensionFilter: function (filter) {
-        var parts = filter.split(".");
-        return filter === "*" || parts.length === 2 &&
-            parts[0] === "*";
+    _escapeRegexCharacters: function(str) {
+    },
+
+    _looksLikeSimpleFilter: function (filter) {
+        // filter is simple if it only contains alphanumerics, periods & wildcard (*)
+        const result = Array.from(filter).reduce(
+            (a, c) => a && simpleFilterChars.indexOf(c) > -1,
+            true);
+        return result;
     }
 };
 
