@@ -18,7 +18,6 @@ var runningHacks = [],
     badgeElementId ="hubberdashery-hack-count-badge";
 
 function listHacksForPage () {
-    console.log("Hubberdashery late loading -- for load progress, set '@run-at start' on this script");
     var path = window.location.pathname;
     return hacks.filter(h => path.match(h.urlMatch));
 }
@@ -64,7 +63,7 @@ function addBadgeFor(count) {
 function addBadgeToOcticon(badge) {
     var target = document.querySelector(".octicon");
     if (target) {
-        target.parentElement.appendChild(badge);
+        window.setTimeout(() => target.parentElement.appendChild(badge), 0);
         return;
     }
     window.setTimeout(() => addBadgeToOcticon(badge), 1000);
@@ -72,7 +71,10 @@ function addBadgeToOcticon(badge) {
 
 function displayHacksAvailable() {
     var available = listHacksForPage();
-    addBadgeFor(available.length);
+    console.log(available.length + " hacks available... waiting for full window load to run them");
+    if (available.length) {
+      addBadgeFor(available.length);
+    }
 }
 
 function refreshHacksOnPathChange() {
@@ -95,6 +97,7 @@ function removeBadge() {
 
 var currentPath = "";
 if (document.readyState === "complete") {
+    console.log("Hubberdashery late loading -- for load progress, set '@run-at start' on this script");
     executeHacks();
     currentPath = window.location.pathname;
     refreshHacksOnPathChange();
