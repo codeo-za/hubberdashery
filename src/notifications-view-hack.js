@@ -16,7 +16,12 @@ NotificationsViewHack.prototype = {
     this._setBusy();
     var promises = this._findNotificationsLinks()
       .map(link => this._updateReviewMarkerOn(link));
-    Promise.all(promises).then(results => this._setNotBusy(results));
+    Promise.all(promises)
+      .then(results => this._setNotBusy(results, "yellow"))
+      .catch(err => {
+        console.error(err);
+        this._setNotBusy(undefined, "red");
+      });
   },
   _addRotationAnimationStyle: function() {
     var el = document.createElement("style");
@@ -34,14 +39,14 @@ NotificationsViewHack.prototype = {
       octicon.title = "busy haxing it up...";
     }
   },
-  _setNotBusy: function(results) {
+  _setNotBusy: function(results, color) {
     var octicon = document.querySelector(".octicon");
     if (octicon) {
-      var warn = results.filter(r => r)[0];
+      var colorize = results === undefined || results.filter(r => r)[0];
       octicon.classList.remove("__spinner");
       octicon.title = "";
-      if (warn) {
-        octicon.style.color = "yellow";
+      if (colorize) {
+        octicon.style.color = color;
         octicon.title = "Your attention is required for reviews!";
       }
     }
