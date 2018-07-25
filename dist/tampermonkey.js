@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Hubberdashery
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.4
 // @description  Some hackdashery for your githubz.
 // @author       Space Monkey Extraordinaire!
 // @match        https://github.com/*
 // @grant        none
 // ==/UserScript==
+
 (function() {
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
@@ -232,7 +233,12 @@ NotificationsViewHack.prototype = {
     this._setBusy();
     var promises = this._findNotificationsLinks()
       .map(link => this._updateReviewMarkerOn(link));
-    Promise.all(promises).then(results => this._setNotBusy(results));
+    Promise.all(promises)
+      .then(results => this._setNotBusy(results, "yellow"))
+      .catch(err => {
+        console.error(err);
+        this._setNotBusy(undefined, "red");
+      });
   },
   _addRotationAnimationStyle: function() {
     var el = document.createElement("style");
@@ -250,14 +256,14 @@ NotificationsViewHack.prototype = {
       octicon.title = "busy haxing it up...";
     }
   },
-  _setNotBusy: function(results) {
+  _setNotBusy: function(results, color) {
     var octicon = document.querySelector(".octicon");
     if (octicon) {
-      var warn = results.filter(r => r)[0];
+      var colorize = results === undefined || results.filter(r => r)[0];
       octicon.classList.remove("__spinner");
       octicon.title = "";
-      if (warn) {
-        octicon.style.color = "yellow";
+      if (colorize) {
+        octicon.style.color = color;
         octicon.title = "Your attention is required for reviews!";
       }
     }
