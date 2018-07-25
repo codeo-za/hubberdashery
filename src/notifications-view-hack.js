@@ -57,7 +57,7 @@ NotificationsViewHack.prototype = {
       });
   },
   _requiresReviewOn: function(htmlNode) {
-    var node = htmlNode.querySelector("[href$='submit-review']");
+    var node = htmlNode.querySelector(".flash-warn [href$='submit-review']");
     return !!node;
   },
   _fetchContentFor: function(url) {

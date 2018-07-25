@@ -273,7 +273,7 @@ NotificationsViewHack.prototype = {
       });
   },
   _requiresReviewOn: function(htmlNode) {
-    var node = htmlNode.querySelector("[href$='submit-review']");
+    var node = htmlNode.querySelector(".flash-warn [href$='submit-review']");
     return !!node;
   },
   _fetchContentFor: function(url) {
@@ -312,7 +312,6 @@ NotificationsViewHack.prototype = {
 NotificationsViewHack.urlMatch = /.*\/notifications.*/;
 module.exports = NotificationsViewHack;
 },{}],6:[function(require,module,exports){
-"use strict";
 function ExpandCommentsHack() {
     this.init();
 };
@@ -334,10 +333,10 @@ ExpandCommentsHack.prototype = {
         btnExpandComments.classList.add("btn-sm");
         btnExpandComments.classList.add("js-detials-target");
         btnExpandComments.innerHTML = "Expand Comments";
-
+        
         var btnContainer = headerActionsEl[0];
         btnContainer.insertBefore(
-            btnExpandComments,
+            btnExpandComments, 
             btnContainer.firstChild);
 
         var loadMore = function () {
@@ -381,7 +380,7 @@ ExpandCommentsHack.prototype = {
 
         var addCommentController = function(){
             updateButtonStatus('✅ Remove Completed Comments');
-            btnExpandComments.onclick = killAllCommentsRespondedTo;
+            btnExpandComments.onclick = killAllCommentsRespondedTo; 
         };
 
         var killAllCommentsRespondedTo = function(){
@@ -393,7 +392,7 @@ ExpandCommentsHack.prototype = {
                 if (lastComment == null){
                     return;
                 }
-                var hasThumbsUp =
+                var hasThumbsUp = 
                     Array.from(lastComment.getElementsByClassName('emoji mr-1'))
                     .filter(x => x.innerHTML == '👍')
                     .length > 0;
