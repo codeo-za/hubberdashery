@@ -239,6 +239,7 @@ ExpandCommentsHack.prototype = {
             } else {
                 expandAllComments();
                 addCommentController();
+                addVersionLinks();
             }
         };
 
@@ -270,6 +271,53 @@ ExpandCommentsHack.prototype = {
         };
 
         btnExpandComments.onclick = continouslyCheckInAndLoad;
+
+
+        /*
+        * Version Links
+        */
+       var createVersionLink = function(
+            link, 
+            branchName,
+            name){
+        
+            var base = link.href.substring(0, link.href.indexOf('/pull'));
+            var file = link.innerHTML.trim();
+            var href = base + '/blob/' + branchName + '/' + file;
+            var viewLink = document.createElement("a");
+            viewLink.classList.add("file-info");
+            viewLink.classList.add("link-gray-dark");
+            viewLink.style = "background-color: #e9e9e9;padding:5px;";
+            viewLink.innerHTML = name;
+            viewLink.href = href;
+            viewLink.target = "_blank";
+            return viewLink;
+        };
+        
+        var getBranchName = function(){
+            var commitRefs = document.getElementsByClassName('commit-ref');
+            var span = commitRefs[1].getElementsByClassName('css-truncate-target')[0];
+            return span.innerHTML.trim();
+        };
+        
+        var createDivider = function(){
+            var span = document.createElement("span");
+            span.innerHTML = "&nbsp;";
+            return span;
+        };
+        
+        var addVersionLinks = function(){
+            var branchName = getBranchName();
+            var links = Array.from(document.querySelectorAll('a.file-info'));
+            links.forEach(x => {
+                var viewLatest = createVersionLink(x, branchName, "Latest");
+                x.parentNode.appendChild(viewLatest);
+                x.parentNode.appendChild(createDivider());
+                var changeset = x.href.match('/files/([^#]+)#')[1];
+                var viewAtVersion = createVersionLink(x, changeset, "@Changeset");
+                x.parentNode.appendChild(viewAtVersion);
+            });
+        };
     }
 };
 
