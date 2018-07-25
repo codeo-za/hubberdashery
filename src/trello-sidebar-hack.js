@@ -13,7 +13,7 @@ TrelloSidebarHack.prototype = {
         var trelloComments = comments.filter(x => x.innerHTML.indexOf("trello") !== -1);
 
         if(trelloComments.length !== 1) {
-            console.log(`WARNING: ${comments.length} comments detected. ${trelloComments.length} trello items detected.`);
+            console.log(`${comments.length} comments detected. ${trelloComments.length} trello items detected.`);
             return;
         }
 

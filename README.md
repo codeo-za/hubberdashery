@@ -27,6 +27,7 @@ or use the hosted built artifact by creating the following Tampermonkey script:
 // @author       You
 // @match        https://github.com/*
 // @grant        none
+// @run-at       document-start
 // @require      https://raw.githubusercontent.com/codeo-za/hubberdashery/master/dist/tampermonkey.js
 // ==/UserScript==
 ```
@@ -51,6 +52,7 @@ I suggest installing `TamperMonkey` and enabling access to local files via exten
 // @author       You
 // @match        https://github.com/*
 // @grant        none
+// @run-at       document-start
 // @require      file://C:/code/hubberdashery/dist/tampermonkey.js
 // ==/UserScript==
 ```
