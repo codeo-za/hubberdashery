@@ -15,6 +15,14 @@ describe(`filename-filter`, () => {
     function create(filterText) {
         return new FilenameFilter(filterText);
     }
+    function toFileObject(s) {
+        return {
+            fileName: s
+        };
+    };
+    function toFileName(o) {
+        return o.fileName;
+    }
     describe(`filter`, () => {
         it(`should exist as a function on the prototype`, () => {
             expect(FilenameFilter.prototype.filter).to.be.a("function");
@@ -30,9 +38,9 @@ describe(`filename-filter`, () => {
                 // Arrange
                 const
                     sut = create(text),
-                    files = randomStringArray();
+                    files = randomStringArray().map(toFileObject);
                 // Act
-                const result = sut.filter(files);
+                const result = sut.filter(files).map(toFileName);
                 // Assert
                 expect(result).to.eql(files);
             });
@@ -47,9 +55,9 @@ describe(`filename-filter`, () => {
                     unexpected = randomFilename("txt"),
                     files = [
                         expected1, unexpected
-                    ];
+                    ].map(toFileObject);
                 // Act
-                const result = sut.filter(files);
+                const result = sut.filter(files).map(toFileName);
                 // Assert
                 expect(result).to.eql([expected1]);
             });
@@ -63,9 +71,9 @@ describe(`filename-filter`, () => {
                     unexpected = randomFilename("txt"),
                     files = [
                         expected1, unexpected, expected2
-                    ];
+                    ].map(toFileObject);
                 // Act
-                const result = sut.filter(files);
+                const result = sut.filter(files).map(toFileName);
                 // Assert
                 expect(result).to.eql([expected1, expected2]);
             });
@@ -77,9 +85,9 @@ describe(`filename-filter`, () => {
                     expected1 = randomFilename("cs"),
                     expected2 = randomFilename("txt"),
                     unexpected = randomFilename("jpg"),
-                    files = [expected1, unexpected, expected2];
+                    files = [expected1, unexpected, expected2].map(toFileObject);
                 // Act
-                const result = sut.filter(files);
+                const result = sut.filter(files).map(toFileName);
                 // Assert
                 expect(result).to.eql([expected1, expected2]);
             });
@@ -92,9 +100,9 @@ describe(`filename-filter`, () => {
                     sut = create("!*.cs"),
                     unexpected = randomFilename("cs"),
                     expected = randomFilename("jpg"),
-                    files = [ unexpected, expected ];
+                    files = [unexpected, expected].map(toFileObject);
                 // Act
-                const result = sut.filter(files);
+                const result = sut.filter(files).map(toFileName);
                 // Assert
                 expect(result).to.eql([expected]);
             });
@@ -106,13 +114,28 @@ describe(`filename-filter`, () => {
                     unpexpected1 = randomFilename("cs"),
                     unexpected2 = randomFilename("txt"),
                     expected = randomFilename("jpg"),
-                    files = [ unexpected2, unpexpected1, expected ];
+                    files = [unexpected2, unpexpected1, expected].map(toFileObject);
                 // Act
-                const result = sut.filter(files);
+                const result = sut.filter(files).map(toFileName);
                 // Assert
                 expect(result).to.eql([expected]);
             });
         });
 
+        describe(`regex filters`, () => {
+            it(`should handle a full-line match`, () => {
+                // Arrange
+                const
+                    sut = create("^test.cs"),
+                    expected1 = "test1cs",
+                    expected2 = "test.cs",
+                    unexpected = "path/to/test.cs",
+                    files = [ expected1, unexpected, expected2 ].map(toFileObject);
+                // Act
+                const result = sut.filter(files).map(toFileName);
+                // Assert
+                expect(result).to.eql([expected1, expected2].map(toFileNames));
+            });
+        });
     });
 });

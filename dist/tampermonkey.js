@@ -9,15 +9,20 @@
 // ==/UserScript==
 (function() {
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var 
+"use strict";
+var
     PullRequestsHack = require("./pull-requests-hack"),
     PullRequestPagerHack = require('./pull-requests-pager'),
-    PullRequestCommentHack = require('./pull-request-show-all-comments');
+    PullRequestCommentHack = require('./pull-request-show-all-comments'),
+    TrelloSidebarHack = require('./trello-sidebar-hack'),
+    NotificationsViewHack = require("./notifications-view-hack");
 
 var hacks = [
-    PullRequestsHack, 
+    PullRequestsHack,
     PullRequestPagerHack,
-    PullRequestCommentHack];
+    PullRequestCommentHack,
+    TrelloSidebarHack,
+    NotificationsViewHack];
 
 var runningHacks = [];
 
@@ -26,6 +31,7 @@ var executeHacks = function(){
     console.info('Hubberdashery - executing matchers for ' + path);
     runningHacks.forEach(x => x.destroy());
     var available = hacks.filter(h => path.match(h.urlMatch));
+    console.log("have available hacks: ", available);
     runningHacks = available.map(a => new (a));
 }
 
@@ -38,7 +44,7 @@ window.setInterval(function(){
         window.setTimeout(executeHacks, 0);
         currentPath = window.location.pathname;
     }, 1000);
-},{"./pull-request-show-all-comments":4,"./pull-requests-hack":5,"./pull-requests-pager":6}],2:[function(require,module,exports){
+},{"./notifications-view-hack":5,"./pull-request-show-all-comments":6,"./pull-requests-hack":7,"./pull-requests-pager":8,"./trello-sidebar-hack":9}],2:[function(require,module,exports){
 function FilenameFilter(filterText) {
     this._filterText = filterText;
 }
@@ -111,71 +117,208 @@ FilenameFilter.prototype = {
 
 module.exports = FilenameFilter;
 },{}],3:[function(require,module,exports){
+const simpleFilterChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890.*";
 function FilenameFilterLite(filterText) {
     this._filterText = filterText || "";
 }
 FilenameFilterLite.prototype = {
     filter: function (fileElements) {
         var filters = this._filterText.trim().split(",")
-            .map(part => this.makeFilterFor(part))
+            .map(part => this._makeFilterFor(part))
             .filter(f => f);
         return fileElements.filter(file => {
             var positiveFilters = filters.filter(f => f.match);
             var negativeFilters = filters.filter(f => !f.match);
             const includedByPositiveFilters = positiveFilters.length === 0 ||
                 positiveFilters.reduce((acc2, filter) => {
-                    return acc2 || file.match(filter.re)
+                    return acc2 || file.fileName.match(filter.re)
                 }, false);
-            const negativeFilterMatch = negativeFilters.length === 0 
-            ? false
-            : negativeFilters.reduce((acc2, filter) => {
-                return acc2 || !!file.match(filter.re)
-            }, false);
+            const negativeFilterMatch = negativeFilters.length === 0
+                ? false
+                : negativeFilters.reduce((acc2, filter) => {
+                    return acc2 || !!file.fileName.match(filter.re)
+                }, false);
             return includedByPositiveFilters && !negativeFilterMatch;
         });
     },
-    matches: function (str, filter) {
-        var isMatch = str.match(filter.re);
-        return filter.match ? isMatch : !isMatch;
-    },
-    makeFilterFor: function (text) {
+    _makeFilterFor: function (text) {
         try {
             var trimmed = text.trim();
             if (!trimmed) {
                 return null;
             }
-            // if (trimmed[0] === "/" && trimmed.split("/").length > 2) {
-            //     // raw regex
-            //     return { re: new RegExp(trimmed), match: true };
-            // }
+
             var match = trimmed[0] !== "!";
             if (!match) {
                 trimmed = trimmed.substring(1);
             }
 
-            var re = this.looksLikeFileExtensionFilter(trimmed)
-                ? new RegExp("." + trimmed + "$")
+            var re = this._looksLikeSimpleFilter(trimmed)
+                ? new RegExp(`\.${trimmed.replace(".", "\\.").replace("*", ".*")}$`)
                 : new RegExp(trimmed);
             return {
                 re: re,
                 match: match
             };
-        } catch (e) { 
+        } catch (e) {
             console.log(`ignoring filter '${text}'`, e.toString());
-            /* ignore: filter is probably incomplete */ 
+            /* ignore: filter is probably incomplete */
         }
     },
 
-    looksLikeFileExtensionFilter: function (filter) {
-        var parts = filter.split(".");
-        return filter === "*" || parts.length === 2 &&
-            parts[0] === "*";
+    _escapeRegexCharacters: function(str) {
+    },
+
+    _looksLikeSimpleFilter: function (filter) {
+        // filter is simple if it only contains alphanumerics, periods & wildcard (*)
+        const result = Array.from(filter).reduce(
+            (a, c) => a && simpleFilterChars.indexOf(c) > -1,
+            true);
+        return result;
     }
 };
 
 
 module.exports = FilenameFilterLite;
 },{}],4:[function(require,module,exports){
+function addItemsToSidebar(headingText, contentArray) {
+    if(!Array.isArray(contentArray)) {
+        contentArray = [contentArray];
+    }
+
+	// Create the heading
+	var trelloSidebarHeading = document.createElement("div");
+	trelloSidebarHeading.classList.add("discussion-sidebar-heading");
+	trelloSidebarHeading.classList.add("text-bold");
+    trelloSidebarHeading.innerHTML = headingText;
+	trelloSidebarItem.appendChild(trelloSidebarHeading);
+    
+    contentArray.forEach(element => {
+        // Create the content
+        var trelloSidebarContent = document.createElement("div");
+        trelloSidebarContent.innerHTML = content;
+
+        // Create the sidebar item
+        var trelloSidebarItem = document.createElement("div");
+        trelloSidebarItem.classList.add("discussion-sidebar-item");
+        trelloSidebarItem.classList.add("sidebar-trello");
+
+        // Append the side bar item heading and content.
+        trelloSidebarItem.appendChild(element);
+    });
+    
+	// Append the sidebar item to the side panel
+	var discussionSidebar = document.getElementById('partial-discussion-sidebar');
+	discussionSidebar.appendChild(trelloSidebarItem);
+}
+
+module.exports = addItemsToSidebar;
+},{}],5:[function(require,module,exports){
+"use strict";
+var NotificationsViewHack = function() {
+  this.init();
+};
+
+NotificationsViewHack.prototype = {
+  init: function() {
+    console.log("init NotificationsViewHack");
+    this._currentUser = this._determineCurrentUser();
+    if (!this._currentUser) {
+      console.warn("Can't determine current user");
+      return;
+    }
+    console.log("You are logged in as: " + this._currentUser);
+    this._addRotationAnimationStyle();
+    this._setBusy();
+    var promises = this._findNotificationsLinks()
+      .map(link => this._updateReviewMarkerOn(link));
+    Promise.all(promises).then(results => this._setNotBusy(results));
+  },
+  _addRotationAnimationStyle: function() {
+    var el = document.createElement("style");
+    el.type = "text/css";
+    el.innerHTML = "\
+    .__spinner { animation: __spin 1.5s ease infinite; }\
+    @keyframes __spin { 100% { transform: rotate(360deg); } }\
+    ";
+    document.body.appendChild(el);
+  },
+  _setBusy: function() {
+    var octicon = document.querySelector(".octicon");
+    if (octicon) {
+      octicon.classList.add("__spinner");
+      octicon.title = "busy haxing it up...";
+    }
+  },
+  _setNotBusy: function(results) {
+    var octicon = document.querySelector(".octicon");
+    if (octicon) {
+      var warn = results.filter(r => r)[0];
+      octicon.classList.remove("__spinner");
+      octicon.title = "";
+      if (warn) {
+        octicon.style.color = "yellow";
+        octicon.title = "Your attention is required for reviews!";
+      }
+    }
+  },
+  _determineCurrentUser: function() {
+    var node = document.querySelector(".header-nav-current-user strong");
+    return node ? node.innerText : undefined;
+  },
+  _updateReviewMarkerOn: function(link) {
+    var url = this._getUrlFor(link)
+    return this._fetchContentFor(url)
+      .then(content => {
+        if (this._requiresReviewOn(content)) {
+          link.style.fontWeight = "600";
+          link.text += " ⚠️";
+          link.title = "Review required: " + link.title;
+          return true;
+        }
+        return false;
+      });
+  },
+  _requiresReviewOn: function(htmlNode) {
+    var node = htmlNode.querySelector(".flash-warn [href$='submit-review']");
+    return !!node;
+  },
+  _fetchContentFor: function(url) {
+    if (!fetch) {
+      console.log("no fetch function )':");
+      return Promise.reject();
+    }
+    return fetch(url)
+    .then(result => result.text())
+    .then(content => {
+      var el = document.createElement("html");
+      el.innerHTML = content;
+      return el;
+    });
+  },
+  _getUrlFor: function(link) {
+    var url = link.href;
+    if (!url) {
+      console.warn("Can't get href on ", link);
+      return;
+    }
+    var parts = url.split("#");
+    return parts[0];
+  },
+  _findNotificationsLinks: function() {
+    var result = Array.from(
+      document.querySelectorAll(".notifications-list .list-group-item-name a")
+    );
+    console.log("notifications links:", result);
+    return result;
+  },
+  destroy: function() {
+  }
+};
+
+NotificationsViewHack.urlMatch = /.*\/notifications.*/;
+module.exports = NotificationsViewHack;
+},{}],6:[function(require,module,exports){
 function ExpandCommentsHack() {
     this.init();
 };
@@ -323,8 +466,8 @@ ExpandCommentsHack.prototype = {
 
 ExpandCommentsHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
 module.exports = ExpandCommentsHack;
-},{}],5:[function(require,module,exports){
-var 
+},{}],7:[function(require,module,exports){
+var
     FilenameFilter = require("./filename-filter-old")
     FilenameFilterLite = require("./filename-filter");
 
@@ -427,15 +570,26 @@ PullRequestsHack.prototype = {
         return menuButton;
     },
 
-    createExtendedMenuLinkedTo: function (button) {
-        var buttonRect = button.getClientRects()[0];
-        if (!buttonRect) {
-            this.log("Unable to get client rect for menu button");
+    _getClientRectOf: function(el) {
+        var result = el.getClientRects()[0];
+        if (result) {
+            return result;
+            this.log("Unable to get client rect for", el);
         }
+        return {
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0
+        }
+    },
+    createExtendedMenuLinkedTo: function (button) {
+        var buttonRect = this._getClientRectOf(button);
         var menuDiv = this.mkEl("div", {
             attributes: {
+                id: "hubberdashery-menu",
                 style: {
-                    position: "absolute",
+                    position: "relative",
                     top: this.px(buttonRect.top + buttonRect.height),
                     right: this.px(20),
                     display: "none",
@@ -455,6 +609,13 @@ PullRequestsHack.prototype = {
             button.innerText = button.innerText === "▼" ? "▲" : "▼";
         });
         document.body.appendChild(menuDiv);
+        window.addEventListener("scroll", () => {
+            var buttonRect = button.getClientRects()[0];
+            console.log("buttonRect", buttonRect);
+            // var newTop = buttonRect.top + buttonRect.height;
+            // this.log("moving to: ", newTop);
+            // menuDiv.style.top = this.px(newTop);
+        });
         return menuDiv;
     },
 
@@ -588,7 +749,7 @@ PullRequestsHack.prototype = {
 };
 
 module.exports = PullRequestsHack;
-},{"./filename-filter":3,"./filename-filter-old":2}],6:[function(require,module,exports){
+},{"./filename-filter":3,"./filename-filter-old":2}],8:[function(require,module,exports){
 function PullRequestPagerHack() {
     this.init();
 };
@@ -817,5 +978,32 @@ PullRequestPagerHack.prototype = {
 
 PullRequestPagerHack.urlMatch = /.*\/pull\/.*\/files.*/;
 module.exports = PullRequestPagerHack;
-},{}]},{},[1])
+},{}],9:[function(require,module,exports){
+"use strict";
+var addToSidebarFunc = require('./modules/add-to-sidebar');
+
+function TrelloSidebarHack() {
+    this.init();
+}
+
+TrelloSidebarHack.prototype = {
+    destroy: function(){
+    },
+    init: function(){
+        var comments = Array.from(document.getElementsByClassName('d-block comment-body markdown-body  js-comment-body'));
+        var trelloComments = comments.filter(x => x.innerHTML.indexOf("trello") !== -1);
+
+        if(trelloComments.length !== 1) {
+            console.log(`WARNING: ${comments.length} comments detected. ${trelloComments.length} trello items detected.`);
+            return;
+        }
+
+        var trelloItem = trelloComments[0];
+        addToSidebarFunc('Trello', trelloItem.innerHTML);
+    }
+};
+
+TrelloSidebarHack.urlMatch = /.*\/pull\/[\d]+\/?$/;
+module.exports = TrelloSidebarHack;
+},{"./modules/add-to-sidebar":4}]},{},[1])
 })();
