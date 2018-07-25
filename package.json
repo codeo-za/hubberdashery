@@ -5,7 +5,7 @@
   "scripts": {
     "gulp": "gulp",
     "build": "gulp build-tampermonkey",
-    "autobuild": "nodemon -w src -e js -x \"npm run build-tampermonkey\"",
+    "autobuild": "nodemon -w src -e js -x \"npm run build\"",
     "pretest-once": "node -e \"console.log('Start testing: ', new Date())\"",
     "test-once": "mocha -R mocha-yar \"specs/**/*.spec.js\" || exit 1",
     "autotest": "nodemon -w src -w specs -x \"npm run test-once\""
