@@ -16,7 +16,7 @@ NotificationsViewHack.prototype = {
     this._setBusy();
     var promises = this._findNotificationsLinks()
       .map(link => this._updateReviewMarkerOn(link));
-    Promise.all(promises).then(() => this._setNotBusy());
+    Promise.all(promises).then(results => this._setNotBusy(results));
   },
   _addRotationAnimationStyle: function() {
     var el = document.createElement("style");
@@ -34,11 +34,16 @@ NotificationsViewHack.prototype = {
       octicon.title = "busy haxing it up...";
     }
   },
-  _setNotBusy: function() {
+  _setNotBusy: function(results) {
     var octicon = document.querySelector(".octicon");
     if (octicon) {
+      var warn = results.filter(r => r)[0];
       octicon.classList.remove("__spinner");
       octicon.title = "";
+      if (warn) {
+        octicon.style.color = "yellow";
+        octicon.title = "Your attention is required for reviews!";
+      }
     }
   },
   _determineCurrentUser: function() {
@@ -53,7 +58,9 @@ NotificationsViewHack.prototype = {
           link.style.fontWeight = "600";
           link.text += " ⚠️";
           link.title = "Review required: " + link.title;
+          return true;
         }
+        return false;
       });
   },
   _requiresReviewOn: function(htmlNode) {
