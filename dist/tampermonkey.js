@@ -53,7 +53,7 @@ function addBadgeFor(count) {
         background: "red",
         marginTop: "16px",
         marginLeft: "-6px",
-        
+
         borderStyle: "solid",
         borderWidth: "1px",
         borderRadius: "100%",
@@ -62,7 +62,7 @@ function addBadgeFor(count) {
         width: "16px",
         height: "16px",
         fontSize: "12px",
-        lineHeight: "16px",
+        lineHeight: "13px",
         textAlign: "center"
     }
 
@@ -306,6 +306,7 @@ function createItemElementFor(htmlContent) {
 
     // Append the side bar item heading and content.
     sidebarItem.appendChild(contentContainer);
+    return contentContainer;
 }
 
 function createHeading(headingText) {
@@ -316,7 +317,31 @@ function createHeading(headingText) {
     return el;
 }
 
+var
+    stylesId = "hubberdashery-sidebar-item-styles",
+    sidebarClass = "hubberdashery-sidebar-item";
+
+function addSidebarContainerStylesIfRequired() {
+    if (document.getElementById(stylesId)) {
+        return;
+    }
+    var el = document.createElement("style");
+    el.type = "text/css";
+    el.id = stylesId;
+    el.innerHTML =
+    `
+    .${sidebarClass} {
+        border-width: 1px 0 0 0;
+        border-style: solid;
+        border-color: #e6ebf1;
+        margin-top: 15px;
+    }
+    `;
+    document.body.appendChild(el);
+}
+
 function createContainerInDiscussionSidebar() {
+    addSidebarContainerStylesIfRequired();
     var parent = document.querySelector(".discussion-sidebar");
     if (!parent) {
         console.error("Can't find [.discussion-sidebar]");
@@ -324,6 +349,9 @@ function createContainerInDiscussionSidebar() {
     }
 
     var container = document.createElement("div");
+    container.classList.add("discussion-sidebar-item");
+    container.classList.add("sidebar-trello-items");
+    container.classList.add(sidebarClass);
     parent.appendChild(container)
     return container;
 }

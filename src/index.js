@@ -40,7 +40,7 @@ function addBadgeFor(count) {
         background: "red",
         marginTop: "16px",
         marginLeft: "-6px",
-        
+
         borderStyle: "solid",
         borderWidth: "1px",
         borderRadius: "100%",
@@ -49,7 +49,7 @@ function addBadgeFor(count) {
         width: "16px",
         height: "16px",
         fontSize: "12px",
-        lineHeight: "16px",
+        lineHeight: "13px",
         textAlign: "center"
     }
 
