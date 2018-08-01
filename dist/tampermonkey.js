@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hubberdashery
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  Some hackdashery for your githubz.
 // @author       Space Monkey Extraordinaire!
 // @match        https://github.com/*
@@ -360,11 +360,7 @@ ExpandCommentsHack.prototype = {
         var expandAllComments = function () {
             var outdatedButtons =
                 Array
-                    .from(document.getElementsByTagName('BUTTON'))
-                    .filter(x =>
-                        x.className.indexOf('show-outdated-button') > -1
-                        && x.offsetParent != null // visible
-                    );
+                    .from(document.querySelectorAll('summary.js-toggle-outdated-comments'));
             outdatedButtons.forEach(x => window.setTimeout(x.click.bind(x), 0));
         };
 

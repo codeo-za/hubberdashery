@@ -39,11 +39,7 @@ ExpandCommentsHack.prototype = {
         var expandAllComments = function () {
             var outdatedButtons =
                 Array
-                    .from(document.getElementsByTagName('BUTTON'))
-                    .filter(x =>
-                        x.className.indexOf('show-outdated-button') > -1
-                        && x.offsetParent != null // visible
-                    );
+                    .from(document.querySelectorAll('summary.js-toggle-outdated-comments'));
             outdatedButtons.forEach(x => window.setTimeout(x.click.bind(x), 0));
         };
 
