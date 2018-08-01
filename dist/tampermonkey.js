@@ -1,15 +1,18 @@
 // ==UserScript==
 // @name         Hubberdashery
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.6
 // @description  Some hackdashery for your githubz.
 // @author       Space Monkey Extraordinaire!
 // @match        https://github.com/*
 // @grant        none
+// @run-at       document-start
 // ==/UserScript==
+
 (function() {
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
+console.log(" --- Hubberdashery loaded ---");
 var
     PullRequestsHack = require("./pull-requests-hack"),
     PullRequestPagerHack = require('./pull-requests-pager'),
@@ -24,19 +27,71 @@ var hacks = [
     TrelloSidebarHack,
     NotificationsViewHack];
 
-var runningHacks = [];
+var runningHacks = [],
+    badgeElementId ="hubberdashery-hack-count-badge";
 
-var executeHacks = function(){
+function listHacksForPage () {
+    var path = window.location.pathname;
+    return hacks.filter(h => path.match(h.urlMatch));
+}
+
+function executeHacks() {
     var path = window.location.pathname;
     console.info('Hubberdashery - executing matchers for ' + path);
     runningHacks.forEach(x => x.destroy());
-    var available = hacks.filter(h => path.match(h.urlMatch));
-    console.log("have available hacks: ", available);
+    var available = listHacksForPage();
     runningHacks = available.map(a => new (a));
 }
 
-var currentPath = "";
-window.setInterval(function(){
+function addBadgeFor(count) {
+    var el = document.createElement("span");
+    el.innerText = count;
+    el.title = count + " hacks will run when the document has loaded";
+    el.id = badgeElementId;
+    var style = {
+        display: "inline-block",
+        background: "red",
+        marginTop: "16px",
+        marginLeft: "-6px",
+
+        borderStyle: "solid",
+        borderWidth: "1px",
+        borderRadius: "100%",
+        borderColor: "white",
+
+        width: "16px",
+        height: "16px",
+        fontSize: "12px",
+        lineHeight: "13px",
+        textAlign: "center"
+    }
+
+    Object.keys(style).forEach(k => {
+        el.style[k] = style[k];
+    });
+
+    addBadgeToOcticon(el);
+}
+
+function addBadgeToOcticon(badge) {
+    var target = document.querySelector(".octicon");
+    if (target) {
+        window.setTimeout(() => target.parentElement.appendChild(badge), 0);
+        return;
+    }
+    window.setTimeout(() => addBadgeToOcticon(badge), 1000);
+}
+
+function displayHacksAvailable() {
+    var available = listHacksForPage();
+    console.log(available.length + " hacks available... waiting for full window load to run them");
+    if (available.length) {
+      addBadgeFor(available.length);
+    }
+}
+
+function refreshHacksOnPathChange() {
+    window.setInterval(function(){
         if (currentPath == window.location.pathname){
             return;
         }
@@ -44,6 +99,41 @@ window.setInterval(function(){
         window.setTimeout(executeHacks, 0);
         currentPath = window.location.pathname;
     }, 1000);
+}
+
+function removeBadge() {
+    var badge = document.getElementById(badgeElementId);
+    if (badge) {
+        badge.remove();
+    }
+}
+
+var currentPath = "";
+if (document.readyState === "complete") {
+    console.log("Hubberdashery late loading -- for load progress, set '@run-at start' on this script");
+    executeHacks();
+    currentPath = window.location.pathname;
+    refreshHacksOnPathChange();
+} else {
+    console.log("eager loading engaged!");
+    displayHacksAvailable();
+    window.addEventListener("load", function() {
+        console.log("Running hax");
+        currentPath = window.location.pathname;
+        [
+            removeBadge,
+            executeHacks,
+            refreshHacksOnPathChange
+        ].forEach(func => {
+            try {
+                func();
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    });
+}
+
 },{"./notifications-view-hack":5,"./pull-request-show-all-comments":6,"./pull-requests-hack":7,"./pull-requests-pager":8,"./trello-sidebar-hack":9}],2:[function(require,module,exports){
 function FilenameFilter(filterText) {
     this._filterText = filterText;
@@ -181,35 +271,89 @@ FilenameFilterLite.prototype = {
 
 module.exports = FilenameFilterLite;
 },{}],4:[function(require,module,exports){
+"use strict";
+
 function addItemsToSidebar(headingText, contentArray) {
-    if(!Array.isArray(contentArray)) {
+    if (!Array.isArray(contentArray)) {
         contentArray = [contentArray];
     }
 
-	// Create the heading
-	var trelloSidebarHeading = document.createElement("div");
-	trelloSidebarHeading.classList.add("discussion-sidebar-heading");
-	trelloSidebarHeading.classList.add("text-bold");
-    trelloSidebarHeading.innerHTML = headingText;
-	trelloSidebarItem.appendChild(trelloSidebarHeading);
-    
-    contentArray.forEach(element => {
-        // Create the content
-        var trelloSidebarContent = document.createElement("div");
-        trelloSidebarContent.innerHTML = content;
+    var container = createContainerInDiscussionSidebar();
+    if (!container) {
+        return;
+    }
 
-        // Create the sidebar item
-        var trelloSidebarItem = document.createElement("div");
-        trelloSidebarItem.classList.add("discussion-sidebar-item");
-        trelloSidebarItem.classList.add("sidebar-trello");
+    console.debug("have side-bar container: ", container);
 
-        // Append the side bar item heading and content.
-        trelloSidebarItem.appendChild(element);
+    container.appendChild(createHeading(headingText));
+
+    contentArray.forEach(content => {
+        var element = createItemElementFor(content);
+        console.debug("have content element: ", element);
+        container.appendChild(element);
     });
-    
-	// Append the sidebar item to the side panel
-	var discussionSidebar = document.getElementById('partial-discussion-sidebar');
-	discussionSidebar.appendChild(trelloSidebarItem);
+}
+
+function createItemElementFor(htmlContent) {
+    // Create the content
+    var contentContainer = document.createElement("div");
+    contentContainer.innerHTML = htmlContent;
+
+    // Create the sidebar item
+    var sidebarItem = document.createElement("div");
+    sidebarItem.classList.add("discussion-sidebar-item");
+    sidebarItem.classList.add("sidebar-trello");
+
+    // Append the side bar item heading and content.
+    sidebarItem.appendChild(contentContainer);
+    return contentContainer;
+}
+
+function createHeading(headingText) {
+    var el = document.createElement("div");
+    el.classList.add("discussion-sidebar-heading");
+    el.classList.add("text-bold");
+    el.innerHTML = headingText;
+    return el;
+}
+
+var
+    stylesId = "hubberdashery-sidebar-item-styles",
+    sidebarClass = "hubberdashery-sidebar-item";
+
+function addSidebarContainerStylesIfRequired() {
+    if (document.getElementById(stylesId)) {
+        return;
+    }
+    var el = document.createElement("style");
+    el.type = "text/css";
+    el.id = stylesId;
+    el.innerHTML =
+    `
+    .${sidebarClass} {
+        border-width: 1px 0 0 0;
+        border-style: solid;
+        border-color: #e6ebf1;
+        margin-top: 15px;
+    }
+    `;
+    document.body.appendChild(el);
+}
+
+function createContainerInDiscussionSidebar() {
+    addSidebarContainerStylesIfRequired();
+    var parent = document.querySelector(".discussion-sidebar");
+    if (!parent) {
+        console.error("Can't find [.discussion-sidebar]");
+        return;
+    }
+
+    var container = document.createElement("div");
+    container.classList.add("discussion-sidebar-item");
+    container.classList.add("sidebar-trello-items");
+    container.classList.add(sidebarClass);
+    parent.appendChild(container)
+    return container;
 }
 
 module.exports = addItemsToSidebar;
@@ -232,7 +376,12 @@ NotificationsViewHack.prototype = {
     this._setBusy();
     var promises = this._findNotificationsLinks()
       .map(link => this._updateReviewMarkerOn(link));
-    Promise.all(promises).then(results => this._setNotBusy(results));
+    Promise.all(promises)
+      .then(results => this._setNotBusy(results, "yellow"))
+      .catch(err => {
+        console.error(err);
+        this._setNotBusy(undefined, "red");
+      });
   },
   _addRotationAnimationStyle: function() {
     var el = document.createElement("style");
@@ -250,14 +399,14 @@ NotificationsViewHack.prototype = {
       octicon.title = "busy haxing it up...";
     }
   },
-  _setNotBusy: function(results) {
+  _setNotBusy: function(results, color) {
     var octicon = document.querySelector(".octicon");
     if (octicon) {
-      var warn = results.filter(r => r)[0];
+      var colorize = results === undefined || results.filter(r => r)[0];
       octicon.classList.remove("__spinner");
       octicon.title = "";
-      if (warn) {
-        octicon.style.color = "yellow";
+      if (colorize) {
+        octicon.style.color = color;
         octicon.title = "Your attention is required for reviews!";
       }
     }
@@ -990,7 +1139,7 @@ TrelloSidebarHack.prototype = {
         var trelloComments = comments.filter(x => x.innerHTML.indexOf("trello") !== -1);
 
         if(trelloComments.length !== 1) {
-            console.log(`WARNING: ${comments.length} comments detected. ${trelloComments.length} trello items detected.`);
+            console.log(`${comments.length} comments detected. ${trelloComments.length} trello items detected.`);
             return;
         }
 
