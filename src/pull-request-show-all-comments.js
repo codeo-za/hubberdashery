@@ -39,7 +39,8 @@ ExpandCommentsHack.prototype = {
         var expandAllComments = function () {
             var outdatedButtons =
                 Array
-                    .from(document.querySelectorAll('summary.js-toggle-outdated-comments'));
+                    .from(document.querySelectorAll('summary.js-toggle-outdated-comments'))
+                    .filter(x => !x.parentElement.open);
             outdatedButtons.forEach(x => window.setTimeout(x.click.bind(x), 0));
         };
 
@@ -100,7 +101,7 @@ ExpandCommentsHack.prototype = {
             name){
         
             var base = link.href.substring(0, link.href.indexOf('/pull'));
-            var file = link.innerHTML.trim();
+            var file = link.title.trim();
             var href = base + '/blob/' + branchName + '/' + file;
             var viewLink = document.createElement("a");
             viewLink.classList.add("file-info");
@@ -128,11 +129,11 @@ ExpandCommentsHack.prototype = {
             var branchName = getBranchName();
             var links = Array.from(document.querySelectorAll('a.file-info'));
             links.forEach(x => {
-                var viewLatest = createVersionLink(x, branchName, "Latest");
+                var viewLatest = createVersionLink(x, branchName, "@head");
                 x.parentNode.appendChild(viewLatest);
                 x.parentNode.appendChild(createDivider());
-                var changeset = x.href.match('/files/([^#]+)#')[1];
-                var viewAtVersion = createVersionLink(x, changeset, "@Changeset");
+                var changeset = x.href.match('/files/([^\.#]+)')[1];
+                var viewAtVersion = createVersionLink(x, changeset, "@changeset");
                 x.parentNode.appendChild(viewAtVersion);
             });
         };
