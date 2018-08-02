@@ -1,10 +1,9 @@
 "use strict";
 console.log(" --- Hubberdashery loaded ---");
-var
-    PullRequestsHack = require("./pull-requests-hack"),
-    PullRequestPagerHack = require('./pull-requests-pager'),
-    PullRequestCommentHack = require('./pull-request-show-all-comments'),
-    TrelloSidebarHack = require('./trello-sidebar-hack'),
+var PullRequestsHack = require("./pull-requests-hack"),
+    PullRequestPagerHack = require("./pull-requests-pager"),
+    PullRequestCommentHack = require("./pull-request-show-all-comments"),
+    TrelloSidebarHack = require("./trello-sidebar-hack"),
     NotificationsViewHack = require("./notifications-view-hack");
 
 var hacks = [
@@ -12,22 +11,23 @@ var hacks = [
     PullRequestPagerHack,
     PullRequestCommentHack,
     TrelloSidebarHack,
-    NotificationsViewHack];
+    NotificationsViewHack
+];
 
 var runningHacks = [],
-    badgeElementId ="hubberdashery-hack-count-badge";
+    badgeElementId = "hubberdashery-hack-count-badge";
 
-function listHacksForPage () {
+function listHacksForPage() {
     var path = window.location.pathname;
     return hacks.filter(h => path.match(h.urlMatch));
 }
 
 function executeHacks() {
     var path = window.location.pathname;
-    console.info('Hubberdashery - executing matchers for ' + path);
+    console.info("Hubberdashery - executing matchers for " + path);
     runningHacks.forEach(x => x.destroy());
     var available = listHacksForPage();
-    runningHacks = available.map(a => new (a));
+    runningHacks = available.map(a => new a());
 }
 
 function addBadgeFor(count) {
@@ -51,7 +51,7 @@ function addBadgeFor(count) {
         fontSize: "12px",
         lineHeight: "13px",
         textAlign: "center"
-    }
+    };
 
     Object.keys(style).forEach(k => {
         el.style[k] = style[k];
@@ -71,18 +71,21 @@ function addBadgeToOcticon(badge) {
 
 function displayHacksAvailable() {
     var available = listHacksForPage();
-    console.log(available.length + " hacks available... waiting for full window load to run them");
+    console.log(
+        available.length +
+            " hacks available... waiting for full window load to run them"
+    );
     if (available.length) {
-      addBadgeFor(available.length);
+        addBadgeFor(available.length);
     }
 }
 
 function refreshHacksOnPathChange() {
-    window.setInterval(function(){
-        if (currentPath == window.location.pathname){
+    window.setInterval(function() {
+        if (currentPath == window.location.pathname) {
             return;
         }
-        console.info('Hubberdashery - detected url change');
+        console.info("Hubberdashery - detected url change");
         window.setTimeout(executeHacks, 0);
         currentPath = window.location.pathname;
     }, 1000);
@@ -95,9 +98,21 @@ function removeBadge() {
     }
 }
 
+function reloadHacks() {
+    runningHacks.forEach(x => x.destroy());
+    runningHacks.forEach(x => {
+        if (typeof x["init"] == "function") {
+            x.init();
+        }
+    });
+}
+window.__reload_hacks = reloadHacks;
+
 var currentPath = "";
 if (document.readyState === "complete") {
-    console.log("Hubberdashery late loading -- for load progress, set '@run-at start' on this script");
+    console.log(
+        "Hubberdashery late loading -- for load progress, set '@run-at start' on this script"
+    );
     executeHacks();
     currentPath = window.location.pathname;
     refreshHacksOnPathChange();
@@ -107,11 +122,7 @@ if (document.readyState === "complete") {
     window.addEventListener("load", function() {
         console.log("Running hax");
         currentPath = window.location.pathname;
-        [
-            removeBadge,
-            executeHacks,
-            refreshHacksOnPathChange
-        ].forEach(func => {
+        [removeBadge, executeHacks, refreshHacksOnPathChange].forEach(func => {
             try {
                 func();
             } catch (e) {
