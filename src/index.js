@@ -3,8 +3,7 @@ console.log(" --- Hubberdashery loaded ---");
 var PullRequestsHack = require("./pull-requests-hack"),
     PullRequestPagerHack = require("./pull-requests-pager"),
     PullRequestCommentHack = require("./pull-request-show-all-comments"),
-    TrelloSidebarHack = require("./trello-sidebar-hack"),
-    NotificationsViewHack = require("./notifications-view-hack");
+    TrelloSidebarHack = require("./trello-sidebar-hack");
 
 var hacks = [
     PullRequestsHack,
