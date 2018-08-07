@@ -9,8 +9,7 @@ var hacks = [
     PullRequestsHack,
     PullRequestPagerHack,
     PullRequestCommentHack,
-    TrelloSidebarHack,
-    NotificationsViewHack
+    TrelloSidebarHack
 ];
 
 var runningHacks = [],
