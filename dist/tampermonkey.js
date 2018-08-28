@@ -923,7 +923,8 @@ PullRequestPagerHack.prototype = {
             if (!show) {
                 continue;
             }
-            if (!file._hasContentLoaded) {
+
+            if (file._hasContentLoaded) {
                 continue;
             }
 
